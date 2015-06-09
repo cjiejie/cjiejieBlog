@@ -1,0 +1,291 @@
+---
+layout: post
+title: 如何编译内核
+date:   2014-11-19 22:21:49
+categories: ARM-Linux
+tags: ARM-Linux
+---
+<pre>
+内核，是一个操作系统的核心。它负责管理系统的进程、内存、设备驱
+动程序、文件和网络系统，决定着系统的性能和稳定性。Linux作为一
+个自由软件，在广大爱好者的支持下，内核版本不断更新。新的内核修
+订了旧内核的bug，并增加了许多新的特性。如果用户想要使用这些新
+特性，或想根据自己的系统度身定制一个更高效，更稳定的内核，就需
+要重新编译内核。本文将以RedHat Linux 6.0（kernel 2.2.5）为操
+作系统平台，介绍在Linux上进行内核编译的方法。 
+
+　　一、 下载新内核的源代码 
+
+　　目前，在Internet上提供Linux源代码的站点有很多，读者可以选
+择一个速度较快的站点下载。笔者是从站点www.kernelnotes.org上下
+载了Linux的最新开发版内核2.3.14的源代码，全部代码被压缩到一个
+名叫Linux-2.3.14.tar.gz的文件中。 
+
+　　二、 释放内核源代码 
+
+　　由于源代码放在一个压缩文件中，因此在配置内核之前，要先将
+源代码释放到指定的目录下。首先以root帐号登录，然后进入
+/usr/src子目录。如果用户在安装Linux时，安装了内核的源代码，
+则会发现一个linux-2.2.5的子目录。该目录下存放着内核2.2.5的源
+代码。此外，还会发现一个指向该目录的链接linux。删除该连接，
+然后将新内核的源文件拷贝到/usr/src目录中。 
+
+　　（一）、用tar命令释放内核源代码 
+
+　　# cd /usr/src 
+
+　　# tar zxvf Linux-2.3.14.tar.gz 
+
+　　文件释放成功后，在/usr/src目录下会生成一个linux子目录。
+其中包含了内核2.3.14的全部源代码。 
+
+　　（二）、将/usr/include/asm、/usr/inlude/linux、/usr/
+include/scsi链接到/usr/src/linux/include目录下的对应目录中。 
+
+　　# cd /usr/include 
+
+　　# rm -Rf asm linux 
+
+　　# ln -s /usr/src/linux/include/asm-i386 asm 
+
+　　# ln -s /usr/src/linux/include/linux linux 
+
+　　# ln -s /usr/src/linux/include/scsi scsi 
+
+　　（三）、删除源代码目录中残留的.o文件和其它从属文件。 
+
+　　# cd /usr/src/linux 
+
+　　# make mrproper 
+
+　　三、 配置内核 
+
+　　（一）、启动内核配置程序。 
+
+　　# cd /usr/src/linux 
+
+　　# make config 
+
+　　除了上面的命令，用户还可以使用make menuconfig命令启动一个
+菜单模式的配置界面。如果用户安装了X window系统，还可以执行
+make xconfig命令启动X window下的内核配置程序。 
+
+　　（二）、配置内核 
+
+　　Linux的
+内核配置程序提供了一系列配置选项。对于每一个配置选项，用户可
+以回答"y"、"m"或"n"。其中"y"表示将相应特性的支持或设备驱动程
+序编译进内核；"m"表示将相应特性的支持或设备驱动程序编译成可加
+载模块，在需要时，可由系统或用户自行加入到内核中去；"n"表示内
+核不提供相应特性或驱动程序的支持。由于内核的配置选项非常多，
+本文只介绍一些比较重要的选项。 
+
+　　1、Code maturity level options（代码成熟度选项） 
+
+　　Prompt for development and/or incomplete code/drivers 
+(CONFIG_EXPERIMENTAL) [N/y/?] 
+如果用户想要使用还处于测试阶段的代码或驱动，可以选择“y”。
+如果想编译出一个稳定的内核，则要选择“n”。 
+
+　　1、 Processor type and features（处理器类型和特色） 
+
+　　（1）、Processor family (386, 486/Cx486, 586/K5/5x86/6x86,
+ Pentium/K6/TSC, PPro/6x86MX) [PPro/6x86MX] 选择处理器类型，缺省为Ppro/6x86MX。 
+
+　　（2）、Maximum Physical Memory (1GB, 2GB) [1GB] 内核支持的最大内存数，缺省为1G。 
+
+　　（3）、Math emulation (CONFIG_MATH_EMULATION) [N/y/?] 协处理器仿真，缺省为不仿真。 
+
+　　（4）、MTRR (Memory Type Range Register) support (CONFIG_MTRR) [N/y/?] 
+
+　　选择该选项，系统将生成/proc/mtrr文件对MTRR进行管理，供X server使用。 
+
+　　（5）、Symmetric multi-processing support (CONFIG_SMP) [Y/n/?] 选择“y”，内核将支持对称多处理器。 
+
+　　2、 Loadable module support（可加载模块支持） 
+
+　　（1）、Enable loadable module support (CONFIG_MODULES) [Y/n/?] 选择“y”，内核将支持加载模块。 
+
+　　（2）、Kernel module loader (CONFIG_KMOD) [N/y/?] 选择“y”，内核将自动加载那些可加载模块，否则需要用户手工加载。 
+
+　　3、 General setup（一般设置） 
+
+　　（1）、Networking support (CONFIG_NET) [Y/n/?] 该选项设置是否在内核中提供网络支持。 
+
+　　（2）、PCI support (CONFIG_PCI) [Y/n/?] 该选项设置是否在内核中提供PCI支持。 
+
+　　（3）、PCI access mode (BIOS, Direct, Any) [Any] 该选项设置Linux探测PCI设备的方式。选择“BIOS”，Linux将使用BIOS；选择“Direct”，Linux将不通过BIOS；选择“Any”，Linux将直接探测PCI设备，如果失败，再使用BIOS。 
+
+　　（4）Parallel port support (CONFIG_PARPORT) [N/y/m/?] 选择“y”，内核将支持平行口。 
+
+　　4、 Plug and Play configuration（即插即用设备支持） 
+
+　　（1）、Plug and Play support (CONFIG_PNP) [Y/m/n/?] 选择“y”，内核将自动配置即插即用设备。 
+
+　　（2）、ISA Plug and Play support (CONFIG_ISAPNP) [Y/m/n/?] 选择“y”，内核将自动配置基于ISA总线的即插即用设备。 
+
+　　5、 Block devices（块设备） 
+
+　　（1）、Normal PC floppy disk support (CONFIG_BLK_DEV_FD) [Y/m/n/?] 选择“y”，内核将提供对软盘的支持。 
+
+　　（2）、Enhanced IDE/MFM/RLL disk/cdrom/tape/floppy support (CONFIG_BLK_DEV_IDE) [Y/m/n/?] 选择“y”，内核将提供对增强IDE硬盘、CDROM和磁带机的支持。 
+
+　　6、 Networking options（网络选项） 
+
+　　（1）、Packet socket (CONFIG_PACKET) [Y/m/n/?] 选择“y”，一些应用程序将使用Packet协议直接同网络设备通讯，而不通过内核中的其它中介协议。 
+
+　　（2）、Network firewalls (CONFIG_FIREWALL) [N/y/?] 选择“y”，内核将支持防火墙。 
+
+　　（3）、TCP/IP networking (CONFIG_INET) [Y/n/?] 选择“y”，内核将支持TCP/IP协议。 
+
+　　（4）The IPX protocol (CONFIG_IPX) [N/y/m/?] 选择“y”，内核将支持IPX协议。 
+
+　　（5）、Appletalk DDP (CONFIG_ATALK) [N/y/m/?] 选择“y”，内核将支持Appletalk DDP协议。 
+
+　　8、SCSI support（SCSI支持） 
+
+　　如果用户要使用SCSI设备，可配置相应选项。 
+
+　　9、Network device support（网络设备支持） 
+
+　　Network device support (CONFIG_NETDEVICES) [Y/n/?] 选择“y”，内核将提供对网络驱动程序的支持。 
+
+　　10、Ethernet (10 or 100Mbit)（10M或100M以太网） 
+
+　　在该项设置中，系统提供了许多网卡驱动程序，用户只要选择自己的网卡驱动就可以了。此外，用户还可以根据需要，在内核中加入对FDDI、PPP、SLIP和无线LAN（Wireless LAN）的支持。 
+
+　　11、Character devices（字符设备） 
+
+　　（1）、Virtual terminal (CONFIG_VT) [Y/n/?] 选择“y”，内核将支持虚拟终端。 
+
+　　（2）、Support for console on virtual terminal (CONFIG_VT_CONSOLE) [Y/n/?] 
+
+　　选择“y”，内核可将一个虚拟终端用作系统控制台。 
+
+　　（3）、Standard/generic (dumb) serial support (CONFIG_SERIAL) [Y/m/n/?] 
+
+　　选择“y”，内核将支持串行口。 
+
+　　（4）、Support for console on serial port (CONFIG_SERIAL_CONSOLE) [N/y/?] 
+
+　　选择“y”，内核可将一个串行口用作系统控制台。 
+
+　　12、Mice（鼠标） 
+
+　　PS/2 mouse (aka "auxiliary device") support (CONFIG_PSMOUSE) [Y/n/?] 如果用户使用的是PS/2鼠标，则该选项应该选择“y”。 
+
+　　13、Filesystems（文件系统） 
+
+　　（1）、Quota support (CONFIG_QUOTA) [N/y/?] 选择“y”，内核将支持磁盘限额。 
+
+　　（2）、Kernel automounter support (CONFIG_AUTOFS_FS) [Y/m/n/?] 选择“y”，内核将提供对automounter的支持，使系统在启动时自动 mount远程文件系统。 
+
+　　（3）、DOS FAT fs support (CONFIG_FAT_FS) [N/y/m/?] 选择“y”，内核将支持DOS FAT文件系统。 
+
+　　（4）、ISO 9660 CDROM filesystem support (CONFIG_ISO9660_FS) [Y/m/n/?] 
+
+　　选择“y”，内核将支持ISO 9660 CDROM文件系统。 
+
+　　（5）、NTFS filesystem support (read only) (CONFIG_NTFS_FS) [N/y/m/?] 
+
+　　选择“y”，用户就可以以只读方式访问NTFS文件系统。 
+
+　　（6）、/proc filesystem support (CONFIG_PROC_FS) [Y/n/?] /proc是存放Linux系统运行状态的虚拟文件系统，该项必须选择“y”。 
+
+　　（7）、Second extended fs support (CONFIG_EXT2_FS) [Y/m/n/?] EXT2是Linux的标准文件系统，该项也必须选择“y”。 
+
+　　14、Network File Systems（网络文件系统） 
+
+　　（1）、NFS filesystem support (CONFIG_NFS_FS) [Y/m/n/?] 选择“y”，内核将支持NFS文件系统。 
+
+　　（2）、SMB filesystem support (to mount WfW shares etc.) (CONFIG_SMB_FS) 
+
+　　选择“y”，内核将支持SMB文件系统。 
+
+　　（3）、NCP filesystem support (to mount NetWare volumes) (CONFIG_NCP_FS) 
+
+　　选择“y”，内核将支持NCP文件系统。 
+
+　　15、Partition Types（分区类型） 
+
+　　该选项支持一些不太常用的分区类型，用户如果需要，在相应的选项上选择“y”即可。 
+
+　　16、Console drivers（控制台驱动） 
+
+　　VGA text console (CONFIG_VGA_CONSOLE) [Y/n/?] 选择“y”，用户就可以在标准的VGA显示方式下使用Linux了。 
+
+　　17、Sound（声音） 
+
+　　Sound card support (CONFIG_SOUND) [N/y/m/?] 选择“y”，内核就可提供对声卡的支持。 
+
+　　18、Kernel hacking（内核监视） 
+
+　　Magic SysRq key (CONFIG_MAGIC_SYSRQ) [N/y/?] 选择“y”，用户就可以对系统进行部分控制。一般情况下选择“n”。 
+
+　　四、 编译内核 
+
+　　（一）、建立编译时所需的从属文件 
+
+　　# cd /usr/src/linux 
+
+　　# make dep 
+
+　　（二）、清除内核编译的目标文件 
+
+　　# make clean 
+
+　　（三）、编译内核 
+
+　　# make zImage 
+
+　　内核编译成功后，会在/usr/src/linux/arch/i386/boot目录中生成一个新内核的映像文件zImage。如果编译的内核很大的话，系统会提示你使用make bzImage命令来编译。这时，编译程序就会生成一个名叫bzImage的内核映像文件。 
+
+　　（四）、编译可加载模块 
+
+　　如果用户在配置内核时设置了可加载模块，则需要对这些模块进行编译，以便将来使用insmod命令进行加载。 
+
+　　# make modules 
+
+　　# make modelus_install 
+
+　　编译成功后，系统会在/lib/modules目录下生成一个2.3.14子目录，里面存放着新内核的所有可加载模块。 
+
+　　五、 启动新内核 
+
+　　（一）、将新内核和System.map文件拷贝到/boot目录下 
+
+　　# cp /usr/src/linux/arch/i386/boot/bzImage /boot/vmlinuz-2.3.14 
+
+　　# cp /usr/src/linux/System.map /boot/System.map-2.3.14 
+
+　　# cd /boot 
+
+　　# rm -f System.map 
+
+　　# ln -s System.map-2.3.14 System.map 
+
+　　（二）、配置/etc/lilo.conf文件。在该文件中加入下面几行： 
+
+　　default=linux-2.3.14 
+
+　　image=/boot/vmlinuz-2.3.14 
+
+　　label=linux-2.3.14 
+
+　　root=/dev/hda1 
+
+　　read-only 
+
+　　（三）、使新配置生效 
+
+　　# /sbin/lilo 
+
+　　（四）、重新启动系统 
+
+　　# /sbin/reboot 
+
+　　新内核如果不能正常启动，用户可以在LILO:提示符下启动旧内核。然后查出故障原因，重新编译新内核即可。
+
+了解更多开源相关，去LUPA社区看看吧。
+</pre>
+

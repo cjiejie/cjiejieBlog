@@ -1,0 +1,387 @@
+dd if=PATH_TO_CUBIAN of=/dev/YOUR_DEVICE bs=4096; sync
+
+apt-get install dosfstools   #install mkfs.vfat
+
+mkfs.ext4 /dev/nand   #format nandflash
+
+开启ssh
+sudo apt-get install openssh-client
+sudo apt-get install openssh-server
+
+挂载nfs
+首先在ubuntu上创建共享文件夹 
+	mkdir /home/cjiejie/nfs 	#记得给权限，你懂的
+安装apt-get install nfs-kernel-server nfs-common（一个服务器端,一个客户端）
+ubuntu上编辑 /etc/exports加入共享文件夹路径和权限：
+	/文件夹  *(insecure,rw,async,no_root_squash)
+关掉防火墙
+	sudo iptables -F
+重启nfs
+	sudo /etc/init.d/nfs-kernel-server restart  
+挂载命令：（开发板上操作）
+	mount -o nolock,rw -t nfs 192.168.1.108:/home/cjiejie/nfs  /nfs
+（备注：192.168.1.10 是ubuntu的ip地址，/mnt/nfs 是开发板的挂载点）
+
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- cjiejie_config
+
+[emac_para]
+emac_used = 1
+emac_rxd3 = port:PA00<2><default><default><default>
+emac_rxd2 = port:PA01<2><default><default><default>
+emac_rxd1 = port:PA02<2><default><default><default>
+emac_rxd0 = port:PA03<2><default><default><default>
+emac_txd3 = port:PA04<2><default><default><default>
+emac_txd2 = port:PA05<2><default><default><default>
+emac_txd1 = port:PA06<2><default><default><default>
+emac_txd0 = port:PA07<2><default><default><default>
+emac_rxclk = port:PA08<2><default><default><default>
+emac_rxerr = port:PA09<2><default><default><default>
+emac_rxdV = port:PA10<2><default><default><default>
+emac_mdc = port:PA11<2><default><default><default>
+emac_mdio = port:PA12<2><default><default><default>
+emac_txen = port:PA13<2><default><default><default>
+emac_txclk = port:PA14<2><default><default><default>
+emac_crs = port:PA15<2><default><default><default>
+emac_col = port:PA16<2><default><default><default>
+emac_reset = port:PA17<1><default><default><default>
+
+USB_wifi,将以下替换掉
+[wifi_para]
+wifi_used = 1
+wifi_sdc_id = 3
+wifi_usbc_id = 2
+wifi_usbc_type = 1
+wifi_mod_sel = 6
+wifi_power = ""
+rtk_rtl8723as_wl_dis = port:PH09<1><default><default><0>
+rtk_rtl8723as_bt_dis = port:PB05<1><default><default><0>
+rtk_rtl8723as_wl_host_wake = port:PH10<0><default><default><0>
+rtk_rtl8723as_bt_host_wake = port:PI21<0><default><default><0>
+ap6xxx_wl_regon = port:PH09<1><default><default><0>
+ap6xxx_wl_host_wake = port:PH10<0><default><default><0>
+ap6xxx_bt_regon = port:PB05<1><default><default><0>
+ap6xxx_bt_wake = port:PI20<1><default><default><0>
+ap6xxx_bt_host_wake = port:PI21<0><default><default><0>
+改为如下
+[usb_wifi_para]
+usb_wifi_used = 1
+usb_wifi_usbc_num = 2
+
+
+auto lo eth0
+iface lo inet loopback
+iface eth0 inet dhcp
+
+auto wlan0
+allow-hotplug wlan0
+iface wlan0 inet dhcp
+    wpa-ssid "NJYFY"
+    wpa-psk "1q2w3e4r!@#"
+
+加载wifi
+depmod -a
+modprobe 8188eu
+
+
+root login
+sudo gedit /etc/lightdm/lightdm.conf.d/50-unity-greeter.conf
+添加下面这一行代码：
+greeter-show-manual-login=true
+
+import os
+base_dir='/dev'
+l=os.listdir(base_dir)
+for element in l:
+    if element[0:2]=='sd':
+        print element
+
+audio_pa_ctrl = port:PH15<1><default><default><1>
+
+
+
+amixer set Master 63
+(控制输出音量0~63)
+speaker-test -twav -c2
+
+amixer -c 0 cset numid=24 1
+numid=24,iface=MIXER,name='Mic Power'                                           
+  ; type=BOOLEAN,access=rw------,values=1                                       
+  : values=on   
+
+录音:arecord -f CD --device=plug:hw:0 -d 5 test.wav
+     aplay -f CD --device=plug:hw:0 test.wav
+
+设置audio命令:
+amixer -c <"card"> cset numid=<"control#"> <"input_port">
+	<"card"> is the card, 0 for the sunxi-codec and 1 for the hdmi audio output
+	<"input_port"> is the input port from the table
+	<"control#"> is the control # showed using: aximer contents
+To install the alsa-utils from debian based distros: "apt-get install alsa-utils". Inside the package you have the aplay and arecord tools to test it.
+example:
+amixer -c 0 cset numid=16 0
+
+numid=1,iface=MIXER,name='Master Playback Volume'                               
+  ; type=INTEGER,access=rw------,values=1,min=0,max=63,step=0                   
+  : values=1    
+numid=2,iface=MIXER,name='Playback Switch'                                      
+  ; type=BOOLEAN,access=rw------,values=1                                       
+  : values=on
+numid=3,iface=MIXER,name='FmL Switch'                                           
+  ; type=BOOLEAN,access=rw------,values=1                                       
+  : values=on 
+numid=3,iface=MIXER,name='FmL Switch'                                           
+  ; type=BOOLEAN,access=rw------,values=1                                       
+  : values=on 
+numid=4,iface=MIXER,name='FmR Switch'                                           
+  ; type=BOOLEAN,access=rw------,values=1                                       
+  : values=on 
+numid=5,iface=MIXER,name='LineL Switch'                                         
+  ; type=BOOLEAN,access=rw------,values=1                                       
+  : values=on 
+numid=6,iface=MIXER,name='LineR Switch'                                         
+  ; type=BOOLEAN,access=rw------,values=1                                       
+  : values=on 
+numid=7,iface=MIXER,name='Ldac Left Mixer'                                      
+  ; type=BOOLEAN,access=rw------,values=1                                       
+  : values=on
+numid=8,iface=MIXER,name='Rdac Right Mixer'                                     
+  ; type=BOOLEAN,access=rw------,values=1                                       
+  : values=on 
+numid=9,iface=MIXER,name='Ldac Right Mixer'                                     
+  ; type=BOOLEAN,access=rw------,values=1                                       
+  : values=on
+numid=10,iface=MIXER,name='Mic Input Mux'                                       
+  ; type=INTEGER,access=rw------,values=1,min=0,max=15,step=0                   
+  : values=1 
+numid=11,iface=MIXER,name='MIC output volume'                                   
+  ; type=INTEGER,access=rw------,values=1,min=0,max=7,step=0                    
+  : values=1 
+numid=12,iface=MIXER,name='Fm output Volume'                                    
+  ; type=INTEGER,access=rw------,values=1,min=0,max=7,step=0                    
+  : values=1 
+numid=13,iface=MIXER,name='Line output Volume'                                  
+  ; type=BOOLEAN,access=rw------,values=1                                       
+  : values=on 
+numid=14,iface=MIXER,name='Master Capture Mute'                                 
+  ; type=BOOLEAN,access=rw------,values=1                                       
+  : values=on
+numid=15,iface=MIXER,name='Right Capture Mute'                                  
+  ; type=BOOLEAN,access=rw------,values=1                                       
+  : values=on 
+numid=16,iface=MIXER,name='Left Capture Mute'                                   
+  ; type=BOOLEAN,access=rw------,values=1                                       
+  : values=on 
+numid=17,iface=MIXER,name='Linein Pre-AMP'                                      
+  ; type=INTEGER,access=rw------,values=1,min=0,max=7,step=0                    
+  : values=1 
+numid=18,iface=MIXER,name='LINEIN APM Volume'                                   
+  ; type=INTEGER,access=rw------,values=1,min=0,max=7,step=0                    
+  : values=1 
+numid=19,iface=MIXER,name='Capture Volume'                                      
+  ; type=INTEGER,access=rw------,values=1,min=0,max=7,step=0                    
+  : values=1 
+numid=20,iface=MIXER,name='MicL Volume'                                         
+  ; type=INTEGER,access=rw------,values=1,min=0,max=3,step=0                    
+  : values=1
+numid=21,iface=MIXER,name='MicR Volume'                                         
+  ; type=INTEGER,access=rw------,values=1,min=0,max=3,step=0                    
+  : values=1 
+numid=22,iface=MIXER,name='Mic2 Boost'                                          
+  ; type=BOOLEAN,access=rw------,values=1                                       
+  : values=on
+numid=23,iface=MIXER,name='Mic1 Boost'                                          
+  ; type=BOOLEAN,access=rw------,values=1                                       
+  : values=on 
+numid=24,iface=MIXER,name='Mic Power'                                           
+  ; type=BOOLEAN,access=rw------,values=1                                       
+  : values=on 
+numid=25,iface=MIXER,name='ADC Input Mux'                                       
+  ; type=INTEGER,access=rw------,values=1,min=0,max=7,step=0                    
+  : values=1
+numid=26,iface=MIXER,name='Mic2 gain Volume'                                    
+  ; type=INTEGER,access=rw------,values=1,min=0,max=7,step=0                    
+  : values=1 
+numid=27,iface=MIXER,name='Mic1 gain Volume'                                    
+  ; type=INTEGER,access=rw------,values=1,min=0,max=3,step=0                    
+  : values=1 
+声音的格式有:
+- S8
+- U8
+- S16_LE
+- S16_BE
+- U16_LE
+- U16_BE
+- S24_LE
+- S24_BE
+- U24_LE                                                                        
+- U24_BE                                                                        
+- S32_LE                                                                        
+- S32_BE                                                                        
+- U32_LE                                                                        
+- U32_BE                                                                        
+- FLOAT_LE                                                                      
+- FLOAT_BE                                                                      
+- FLOAT64_LE                                                                    
+- FLOAT64_BE                                                                    
+- MU_LAW                                                                        
+- A_LAW                                                                         
+- IMA_ADPCM                                                                     
+- S24_3LE                                                                       
+- S24_3BE                                                                       
+- U24_3LE                                                                       
+- U24_3BE                                                                       
+- S20_3LE                                                                       
+- S20_3BE                                                                       
+- U20_3LE                                                                       
+- U20_3BE                                                                       
+- S18_3LE                                                                       
+- S18_3BE                                                                       
+- U18_3LE 
+
+
+写测试:
+time dd if=/dev/zero of=test bs=1024 count=100K
+读测试:
+time cat test > /dev/null
+
+
+
+lcd参数设置:
+lcd_x = 800
+lcd_y = 480
+lcd_dclk_freq = 33
+lcd_pwm_not_used = 0
+lcd_pwm_ch = 0
+lcd_pwm_freq = 10000
+lcd_pwm_pol = 0
+lcd_max_bright = 240
+lcd_min_bright = 64
+lcd_if = 0
+lcd_hbp = 215
+lcd_ht = 1055
+lcd_vbp = 34
+lcd_vt = 1050
+lcd_vspw = 0
+lcd_hspw = 0
+lcd_hv_if = 0
+lcd_hv_smode = 0
+lcd_hv_s888_if = 0
+lcd_hv_syuv_if = 0
+lcd_lvds_ch = 0
+lcd_lvds_mode = 0
+lcd_lvds_bitwidth = 0
+lcd_lvds_io_cross = 0
+lcd_cpu_if = 0
+lcd_frm = 0
+lcd_io_cfg0 = 0x10000000
+lcd_gamma_correction_en = 0
+lcd_gamma_tbl_0 = 0x0
+lcd_gamma_tbl_1 = 0x10101
+lcd_gamma_tbl_255 = 0xffffff
+lcd_bl_en_used = 0
+lcd_bl_en = port:PH07<1><0><default><1>
+lcd_power_used = 1
+lcd_power = port:PH08<1><0><default><1>
+lcd_pwm_used = 0
+lcd_pwm = port:PB02<2><0><default><default>
+
+
+0.更新了cedarx-libs
+1.在 sunxi-boards/sys_config/a20/ 添加了文件 ruitek_ht.fex
+2.修改了 linux-sunxi/arch/arm/configs/ 中的 sun7i_defconfig
+3.修改了 u-boot-sunxi 中的 boards.cfg
+4.修改了 u-boot-sunxi/board/sunxi 中的 Makefile
+5.在 u-boot-sunxi/board/sunxi 中添加了文件 dram_ruitek_ht.c
+
+
+linux 安装内核开发环境.
+# apt-get install build-essential linux-headers-generic
+# apt-get build-dep linux
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+查看ubuntu版本
+sudo lsb_release -a
+
+更新源并更新到ubuntu15.04日构建版(自己考虑后果)
+搜狐源：
+    deb http://mirrors.sohu.com/ubuntu/ vivid main restricted universe multiverse
+    deb http://mirrors.sohu.com/ubuntu/ vivid-security main restricted universe multiverse
+    deb http://mirrors.sohu.com/ubuntu/ vivid-updates main restricted universe multiverse
+    deb http://mirrors.sohu.com/ubuntu/ vivid-proposed main restricted universe multiverse
+    deb http://mirrors.sohu.com/ubuntu/ vivid-backports main restricted universe multiverse
+    deb-src http://mirrors.sohu.com/ubuntu/ vivid main restricted universe multiverse
+    deb-src http://mirrors.sohu.com/ubuntu/ vivid-security main restricted universe multiverse
+    deb-src http://mirrors.sohu.com/ubuntu/ vivid-updates main restricted universe multiverse
+    deb-src http://mirrors.sohu.com/ubuntu/ vivid-proposed main restricted universe multiverse
+    deb-src http://mirrors.sohu.com/ubuntu/ vivid-backports main restricted universe multiverse
+阿里云源：
+    deb http://mirrors.aliyun.com/ubuntu/ vivid main restricted universe multiverse
+    deb http://mirrors.aliyun.com/ubuntu/ vivid-security main restricted universe multiverse
+    deb http://mirrors.aliyun.com/ubuntu/ vivid-updates main restricted universe multiverse
+    deb http://mirrors.aliyun.com/ubuntu/ vivid-proposed main restricted universe multiverse
+    deb http://mirrors.aliyun.com/ubuntu/ vivid-backports main restricted universe multiverse
+    deb-src http://mirrors.aliyun.com/ubuntu/ vivid main restricted universe multiverse
+    deb-src http://mirrors.aliyun.com/ubuntu/ vivid-security main restricted universe multiverse
+    deb-src http://mirrors.aliyun.com/ubuntu/ vivid-updates main restricted universe multiverse
+    deb-src http://mirrors.aliyun.com/ubuntu/ vivid-proposed main restricted universe multiverse
+    deb-src http://mirrors.aliyun.com/ubuntu/ vivid-backports main restricted universe multiverse
+网易源：
+    deb http://mirrors.163.com/ubuntu/ vivid main restricted universe multiverse
+    deb http://mirrors.163.com/ubuntu/ vivid-security main restricted universe multiverse
+    deb http://mirrors.163.com/ubuntu/ vivid-updates main restricted universe multiverse
+    deb http://mirrors.163.com/ubuntu/ vivid-proposed main restricted universe multiverse
+    deb http://mirrors.163.com/ubuntu/ vivid-backports main restricted universe multiverse
+    deb-src http://mirrors.163.com/ubuntu/ vivid main restricted universe multiverse
+    deb-src http://mirrors.163.com/ubuntu/ vivid-security main restricted universe multiverse
+    deb-src http://mirrors.163.com/ubuntu/ vivid-updates main restricted universe multiverse
+    deb-src http://mirrors.163.com/ubuntu/ vivid-proposed main restricted universe multiverse
+    deb-src http://mirrors.163.com/ubuntu/ vivid-backports main restricted universe multiverse
+1.快速换源并更新到15.04的方法：
+    sudo sed -i ‘s/utopic/vivid/’ /etc/apt/sources.list
+    sudo apt-get update
+    sudo apt-get dist-upgrade
+2.也可以用简单安全的办法：
+首先刷新源：
+    sudo apt-get update
+然后更新：
+    sudo update-manager -c -d
+然后就是一个向导，就能升级到最新的发行版。
+cjiejie@acer:~$ sudo lsb_release -a
+[sudo] password for cjiejie: 
+No LSB modules are available.
+Distributor ID:	Ubuntu
+Description:	Ubuntu Vivid Vervet (development branch)
+Release:	15.04
+Codename:	vivid
+cjiejie@acer:~$ 
+
+
+旧版本更新源(已经停止更新的源)
+deb http://old-releases.ubuntu.com/ubuntu/ quantal main restricted universe multiverse
+deb http://old-releases.ubuntu.com/ubuntu/ quantal-security main restricted universe multiverse
+deb http://old-releases.ubuntu.com/ubuntu/ quantal-updates main restricted universe multiverse
+deb http://old-releases.ubuntu.com/ubuntu/ quantal-proposed main restricted universe multiverse
+deb http://old-releases.ubuntu.com/ubuntu/ quantal-backports main restricted universe multiverse
+deb-src http://old-releases.ubuntu.com/ubuntu/ quantal main restricted universe multiverse
+deb-src http://old-releases.ubuntu.com/ubuntu/ quantal-security main restricted universe multiverse
+deb-src http://old-releases.ubuntu.com/ubuntu/ quantal-updates main restricted universe multiverse
+deb-src http://old-releases.ubuntu.com/ubuntu/ quantal-proposed main restricted universe multiverse
+deb-src http://old-releases.ubuntu.com/ubuntu/ quantal-backports main restricted universe multiverse

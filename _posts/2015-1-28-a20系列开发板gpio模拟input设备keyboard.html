@@ -1,0 +1,172 @@
+---
+layout: post
+title: gpio模拟input设备keyboard
+date:   2015-01-28 22:21:49
+categories: ARM-Linux
+tags: ARM-Linux
+---
+<pre>
+我的IO口PH20,19,18,17,16,14为普通的按键，现在要把这六个按键注册为真正的键盘设备。
+方法和代码如下。
+
+1.修改linux-sunxi/arch/arm/configs/sun7i_defconfig中的CONFIG_GPIO_SUNXI=y 使能gpio
+2.修改fex文件
+
+[gpio_para]
+
+
+gpio_pin_140 = port:PH14<0><default><default><1>
+gpio_name_140 = "KEY6"
+gpio_pin_141 = port:PH15<0><default><default><1>
+gpio_name_141 =
+gpio_pin_142 = port:PH16<0><default><default><1>
+gpio_name_142 = "KEY5"
+gpio_pin_143 = port:PH17<0><default><default><1>
+gpio_name_143 = "KEY4"
+gpio_pin_144 = port:PH18<0><default><default><1>
+gpio_name_144 = "KEY3"
+gpio_pin_145 = port:PH19<0><default><default><1>
+gpio_name_145 = "KEY2"
+gpio_pin_146 = port:PH20<0><default><default><1>
+gpio_name_146 = "KEY1"
+
+3.建文件xxx.c   下面是代码
+4.吧xxx.c文件放在linux-sunxi/driver/gpio文件夹下同时修改这个文件夹下面的Makefile文件
+最后一行加上    obj-m    +=  xxx.o
+5.重新编译
+6.在build/driver/gpio下有个文件xxx.ko
+7.在你的a20设备中执行insmod  xxx.ko
+8.代码
+#include<linux/kernel.h>
+#include<linux/module.h>
+#include<linux/device.h>
+#include<linux/uaccess.h>
+#include<linux/interrupt.h>
+#include<asm/io.h>
+#include<linux/irq.h>
+#include<asm/irq.h>
+#include<mach/irqs.h>
+#include<plat/sys_config.h>
+#include<mach/system.h>
+#include<linux/slab.h>
+#include<linux/gpio.h>
+#include<linux/init.h>
+#include<linux/fs.h>
+#include<asm/atomic.h>
+#include<linux/kthread.h>
+#include <linux/poll.h>
+#include <linux/fcntl.h>
+#include <linux/input.h>
+
+#define GPIO_NUM_PH20 146
+#define GPIO_NUM_PH19 145
+#define GPIO_NUM_PH18 144
+#define GPIO_NUM_PH17 143
+#define GPIO_NUM_PH16 142
+#define GPIO_NUM_PH14 140
+
+static struct pin_desc{
+        int irq;
+        unsigned char *name;
+        unsigned int pin;
+        unsigned int key_val;
+};
+
+static struct pin_desc pins_desc[6] = {
+                {0,"K1",GPIO_NUM_PH20,KEY_W},
+                {0,"K2",GPIO_NUM_PH19,KEY_S},
+                {0,"K3",GPIO_NUM_PH18,KEY_A},
+                {0,"K4",GPIO_NUM_PH17,KEY_D},
+                {0,"K5",GPIO_NUM_PH16,KEY_M},
+                {0,"K6",GPIO_NUM_PH14,KEY_N},
+}; 
+
+static struct input_dev *buttons_dev;
+
+/* 用户中断处理函数 */
+static irqreturn_t buttons_irq(int irq, void *dev_id)
+{
+        struct pin_desc *pindesc = (struct pin_desc *)dev_id;
+        unsigned int pinval;
+        pinval = gpio_get_value(pindesc->pin);
+
+        if(pinval)
+        {
+                /* 松开 最后一个参数: 0-松开, 1-按下 */
+                input_event(buttons_dev,EV_KEY,pindesc->key_val,0);
+                input_sync(buttons_dev);
+        }
+        else
+        {
+                /* 按下 */
+                input_event(buttons_dev,EV_KEY,pindesc->key_val,1);
+                input_sync(buttons_dev);
+        }
+        return IRQ_HANDLED;
+}
+
+
+/* 驱动入口函数 */
+static int buttons_input_init(void)
+{
+        int i;
+        for(i = 0;i < sizeof(pins_desc)/sizeof(pins_desc[0]);i++)
+        {
+                /*5.申请 GPIO 资源*/
+                if (gpio_request(pins_desc[i].pin,"gpio_pin"))
+                {
+                        printk("%s request gpio error\n",pins_desc[i].name);
+                }
+                pins_desc[i].irq=gpio_to_irq(pins_desc[i].pin);
+        }
+        /* 1.分配一个input_dev结构体 */
+        buttons_dev = input_allocate_device();
+        buttons_dev->name="keyboard";
+        /* 2.设置 */
+        /* 2.1 设置按键能产生哪类事件 */
+        set_bit(EV_KEY,buttons_dev->evbit);
+        set_bit(EV_REP,buttons_dev->evbit);
+
+        /* 2.2 设置能产生这类操作的哪些事件 */
+        set_bit(KEY_W,buttons_dev->keybit);
+        set_bit(KEY_S,buttons_dev->keybit);
+        set_bit(KEY_A,buttons_dev->keybit);
+        set_bit(KEY_D,buttons_dev->keybit);
+        set_bit(KEY_M,buttons_dev->keybit);
+        set_bit(KEY_N,buttons_dev->keybit);
+        
+        /* 3.注册 */
+        input_register_device(buttons_dev);
+
+        
+        /* 4.硬件相关的设置 */
+
+        /* 4.1 申请中断 */  
+        for(i = 0;i < sizeof(pins_desc)/sizeof(pins_desc[0]);i++)
+        {
+                request_irq(pins_desc[i].irq, buttons_irq, IRQF_TRIGGER_FALLING|IRQF_TRIGGER_RISING, pins_desc[i].name, &pins_desc[i]);
+        }
+        
+        return 0;
+}
+
+/* 驱动出口函数 */
+static void buttons_input_exit(void)
+{
+        int i;
+        for(i = 0;i < sizeof(pins_desc)/sizeof(pins_desc[0]);i++)
+        {
+                free_irq(pins_desc[i].irq, &pins_desc[i]);
+        }
+        input_unregister_device(buttons_dev);
+        input_free_device(buttons_dev);
+}
+
+module_init(buttons_input_init);  //用于修饰入口函数
+module_exit(buttons_input_exit);  //用于修饰出口函数        
+
+MODULE_AUTHOR("xiaolei");
+MODULE_DESCRIPTION("a20-keyboard");
+MODULE_LICENSE("GPL");  //遵循GPL协议
+<p>{{ page.date | date_to_string }}</p>
+</pre>

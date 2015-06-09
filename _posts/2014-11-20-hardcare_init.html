@@ -1,0 +1,37 @@
+---
+layout: post
+title: hardcare_init
+date:   2014-11-20 22:21:49
+categories: ARM-Linux
+tags: ARM-Linux
+---
+<pre>
+#! /usr/bin/python
+import SUNXI_GPIO as GPIO
+
+USB0_DRV=GPIO.PH11
+LCD_PWR=GPIO.PH8
+EMAC_PWR_EN=GPIO.PH23
+RF24_VCC_EN=GPIO.PH24
+HDD_PWR_EN=GPIO.PH10
+HUB_PWR_EN=GPIO.PH9
+
+
+GPIO.init()
+GPIO.setcfg(USB0_DRV,GPIO.OUT)
+GPIO.setcfg(LCD_PWR,GPIO.OUT)
+GPIO.setcfg(EMAC_PWR_EN,GPIO.OUT)
+GPIO.setcfg(RF24_VCC,GPIO.OUT)
+GPIO.setcfg(HDD_PWR_EN,GPIO.OUT)
+GPIO.setcfg(HUB_PWR_EN,GPIO.OUT)
+
+
+GPIO.output(USB0_DRV,GPIO.HIGH)
+GPIO.output(LCD_PWR,GPIO.HIGH)
+GPIO.output(EMAC_PWR_EN,GPIO.HIGH)
+GPIO.output(RF24_VCC,GPIO.HIGH)
+GPIO.output(HDD_PWR_EN,GPIO.HIGH)
+GPIO.output(HUB_PWR_EN,GPIO.HIGH)
+print "ok"
+</pre>
+

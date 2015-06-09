@@ -1,0 +1,70 @@
+---
+layout: post
+title: 删除Ubuntu旧内核的操作步骤
+date:   2015-02-14 22:21:49
+categories: Ubuntu
+tags: Ubuntu
+---
+<pre>
+Ubuntu用久了，随着时间的过去，新内核出现，用户难免要自动升级，
+但Ubuntu的自动升级并没有删除系统的旧有核，这部分内核会占用系统
+的资源，并造成漫长的启动表。因此，删除Linux旧内核是很有必要的，
+本文将介绍下如何进行删除旧内核的操作。
+
+首先使用命令，列出所有安装的内核，下表中，带有image的就是内核
+文件，从中选择要卸载的包，用apt-get来卸载。
+
+    在终端中输入命令：dpkg --get-selections|grep linux
+
+会得到以下结果：
+
+    libselinux1 install
+
+    linux-386 install
+
+    linux-image-2.6.15-23-386 install
+
+    linux-image-2.6.15-27-386 install
+
+    linux-image-2.6.15-27-686 install
+
+    linux-image-2.6.15-28-386 install
+
+    linux-image-2.6.15-28-686 deinstall
+
+    linux-image-386 install
+
+    linux-kernel-headers install
+
+    linux-restricted-modules-2.6.15-23-386 install
+
+    linux-restricted-modules-2.6.15-27-386 install
+
+    linux-restricted-modules-2.6.15-27-686 install
+
+    linux-restricted-modules-2.6.15-28-386 install
+
+    linux-restricted-modules-2.6.15-28-686 deinstall
+
+    linux-restricted-modules-386 install
+
+    linux-restricted-modules-common install
+
+    linux-sound-base install
+
+    util-linux install
+
+具体的卸载方法为
+
+    sudo apt-get remove linux-imge-2.6.15-23-386
+
+这样就可以删除内核文件了，
+
+另外还要记住以下命令
+
+uname -a
+
+用于查询当前的内核版本情况。
+</pre>
+
+
